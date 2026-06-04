@@ -12,7 +12,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:studio": "drizzle-kit studio",
     "discover": "tsx scripts/discover.ts",
-    "enrich": "tsx scripts/enrich.ts"
+    "enrich": "tsx scripts/enrich.ts",
+    "outreach": "tsx scripts/outreach.ts"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
