@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { confirmClaim } from "@/lib/claims";
+import { auth } from "@/auth";
 
 export type ConfirmState =
   | { status: "idle" }
@@ -17,16 +18,21 @@ export async function confirmAction(
   if (!token) return { status: "error", message: "Missing token." };
   if (!displayName) return { status: "error", message: "A business name is required." };
 
-  const res = await confirmClaim(token, {
-    displayName,
-    tagline: str(formData, "tagline"),
-    description: str(formData, "description"),
-    phone: str(formData, "phone"),
-    email: str(formData, "email"),
-    website: str(formData, "website"),
-    address: str(formData, "address"),
-    postcode: str(formData, "postcode"),
-  });
+  const session = await auth();
+  const res = await confirmClaim(
+    token,
+    {
+      displayName,
+      tagline: str(formData, "tagline"),
+      description: str(formData, "description"),
+      phone: str(formData, "phone"),
+      email: str(formData, "email"),
+      website: str(formData, "website"),
+      address: str(formData, "address"),
+      postcode: str(formData, "postcode"),
+    },
+    session?.user?.id,
+  );
 
   if (!res.ok || !res.slug) {
     return { status: "error", message: res.error ?? "Could not save." };

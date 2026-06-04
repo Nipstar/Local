@@ -26,6 +26,9 @@ export async function sendTransactional(input: {
   if (!brevoLive()) {
     const messageId = `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     console.log(`[brevo:mock] → ${input.to.email} · "${input.subject}" (${messageId})`);
+    // Dev affordance: surface any links (e.g. magic-link, confirm) in the log.
+    const links = [...input.html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+    if (links.length) console.log(`[brevo:mock]   links: ${links.join("  ")}`);
     return { messageId, mocked: true };
   }
 

@@ -3,7 +3,7 @@
 A self-hosted, owned-end-to-end directory of Hampshire's trades, shops and
 kitchens — built to read like a curated local publication, not a database dump.
 
-This repo currently implements **Phases 0–2** of the master build spec:
+This repo currently implements **Phases 0–4** of the master build spec:
 
 - **Phase 0 — Foundations:** Next.js (App Router, TS) scaffold, the editorial
   design system, Drizzle schema + migrations, seed data, a live styleguide.
@@ -12,6 +12,11 @@ This repo currently implements **Phases 0–2** of the master build spec:
   `BreadcrumbList` JSON-LD, a programmatic sitemap and robots.
 - **Phase 2 — Discovery + enrichment:** Places discovery → prospect upsert →
   async tech-fingerprint + local-rank enrichment → lead scoring.
+- **Phase 3 — CRM + outreach:** admin prospect table, the confirm-your-details
+  conversion flow, Brevo email sequences (PECR-aware), webhook + unsubscribe.
+- **Phase 4 — Portal + monetisation:** Auth.js magic-link, business claiming,
+  the owner listing editor with R2 photo upload, and Stripe subscriptions that
+  flip a listing to the full-bleed Premium card.
 
 ## The data model in one line
 
@@ -92,6 +97,5 @@ drizzle/             # generated migrations
 
 ## Out of scope (later phases)
 
-Phase 3 CRM/outreach + confirm flow · Phase 4 portal/Stripe/Auth.js · Phase 5
-GBP reviews + premium features · Phase 6 perf/cron/CI. The schema and adapters
-are laid so these bolt on without rework.
+Phase 5 GBP reviews + premium features · Phase 6 perf/cron/CI. The schema and
+adapters are laid so these bolt on without rework.

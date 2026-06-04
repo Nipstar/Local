@@ -80,10 +80,23 @@ premium`, plus `suppressed` (never shown publicly).
 - ✅ Phase 0 — Foundations (scaffold, design system, schema, seed, styleguide)
 - ✅ Phase 1 — Public directory (page matrix, JSON-LD, sitemap, ISR)
 - ✅ Phase 2 — Discovery + enrichment (Places/SerpAPI/crawl, scoring, workers)
-- ⬜ Phase 3 — CRM + outreach + confirm-your-details flow
-- ⬜ Phase 4 — Portal + Auth.js + Stripe monetisation
+- ✅ Phase 3 — CRM + outreach + confirm-your-details flow
+- ✅ Phase 4 — Portal: Auth.js magic-link, claim, listing editor + R2 photos, Stripe subscriptions
 - ⬜ Phase 5 — GBP reviews + premium features
 - ⬜ Phase 6 — Performance, lat/lng refresh cron, CI structured-data validation
+
+### Phase 4 notes
+- Auth.js (next-auth v5) magic-link via `src/auth.ts`; database sessions
+  (Drizzle adapter). The verification email goes through Brevo (mock mode logs
+  the magic link — and any email link — to the server console). Needs `AUTH_SECRET`.
+- Owner→business ownership is a verified `claims` row (`claims.userId`). Claiming
+  trusts the signed-in user for now; stronger proof (email-domain/GBP) is future.
+- Stripe Checkout + hosted Customer Portal + webhook (`/api/webhooks/stripe`).
+  Mock mode (no `STRIPE_SECRET_KEY`) applies upgrades directly so premium is
+  testable. `premium` tier → business.status `premium` (full-bleed card);
+  `standard` → `claimed`; cancel → demote to `claimed` (see `src/lib/billing.ts`).
+- R2 photo upload (`src/lib/integrations/r2.ts`) uses the S3 SDK in live mode,
+  returns a placeholder URL in mock mode.
 
 ## Guardrails
 

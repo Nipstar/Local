@@ -122,6 +122,7 @@ export type ConfirmInput = {
 export async function confirmClaim(
   token: string,
   input: ConfirmInput,
+  userId?: string,
 ): Promise<{ ok: boolean; slug?: string; error?: string }> {
   const [claim] = await db.select().from(claims).where(eq(claims.token, token)).limit(1);
   if (!claim?.businessId) return { ok: false, error: "Invalid or expired link." };
@@ -158,7 +159,10 @@ export async function confirmClaim(
     .set({ status: nextStatus, name: values.displayName, updatedAt: new Date() })
     .where(eq(businesses.id, biz.id));
 
-  await db.update(claims).set({ verifiedAt: new Date() }).where(eq(claims.id, claim.id));
+  await db
+    .update(claims)
+    .set({ verifiedAt: new Date(), ...(userId ? { userId } : {}) })
+    .where(eq(claims.id, claim.id));
 
   await logActivity(biz.id, "confirmed", { via: "confirm-link", email: values.email });
 
