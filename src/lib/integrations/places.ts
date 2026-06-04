@@ -88,6 +88,30 @@ export async function placeDetails(placeId: string): Promise<PlaceDetails | null
   };
 }
 
+// ─── Location refresh (30-day cache compliance, spec §0) ────────────────────
+export async function placeLocation(
+  placeId: string,
+): Promise<{ lat: number; lng: number } | null> {
+  if (!features.livePlaces) return mockLocation(placeId);
+  const res = await fetch(`${DETAILS_URL}/${placeId}`, {
+    headers: {
+      "X-Goog-Api-Key": env.placesApiKey!,
+      "X-Goog-FieldMask": "location",
+    },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Places location ${res.status}: ${await res.text()}`);
+  const p = (await res.json()) as GooglePlace;
+  return p.location ? { lat: p.location.latitude, lng: p.location.longitude } : null;
+}
+
+function mockLocation(placeId: string): { lat: number; lng: number } {
+  // Deterministic, stable per place_id.
+  let h = 0;
+  for (const ch of placeId) h = (h * 31 + ch.charCodeAt(0)) % 100000;
+  return { lat: 50.8 + (h % 1000) / 2000, lng: -1.6 + ((h >> 3) % 1000) / 1000 };
+}
+
 // ─── Internal Google shapes ─────────────────────────────────────────────────
 type GooglePlace = {
   id: string;

@@ -18,9 +18,11 @@ If `N8N_WEBHOOK_SECRET` is unset the routes fail closed (HTTP 503).
 
 | Method & path                  | Body (JSON)                                  | Does                                                                 |
 |--------------------------------|----------------------------------------------|---------------------------------------------------------------------|
-| `POST /api/workers/discovery`  | `{ categorySlugs?, townSlugs?, limitPairs? }`| Places Text Search (category × town) → upsert prospects → enqueue enrich jobs. Empty body = full sweep. |
-| `POST /api/workers/queue/tick` | `{ batch?: number }` (default 25)            | Drains a batch of queued enrich jobs (crawl + fingerprint → pack rank → score). |
-| `POST /api/workers/enrich`     | `{ businessId: string }`                     | Enrich one business synchronously (on-demand re-check).             |
+| `POST /api/workers/discovery`    | `{ categorySlugs?, townSlugs?, limitPairs? }`| Places Text Search (category × town) → upsert prospects → enqueue enrich jobs. Empty body = full sweep. |
+| `POST /api/workers/queue/tick`   | `{ batch?: number }` (default 25)            | Drains a batch of queued enrich jobs (crawl + fingerprint → pack rank → score). |
+| `POST /api/workers/enrich`       | `{ businessId: string }`                     | Enrich one business synchronously (on-demand re-check).             |
+| `POST /api/workers/outreach`     | `{ campaign?, limit? }`                      | Send the next due step of an email sequence (confirm → reminder → pitch). |
+| `POST /api/workers/refresh-geo`  | `{ olderThanDays?, limit? }`                 | Refresh lat/lng past the 30-day cache window (spec §0 compliance).  |
 
 All return `{ ok: true, summary }`.
 
@@ -30,8 +32,10 @@ All return `{ ok: true, summary }`.
   (e.g. `limitPairs` per run, or rotate `townSlugs`). Keeps Places usage flat.
 - **Queue tick** — every 2–5 minutes. Enrichment is async via the `crawl_jobs`
   table so discovery never blocks on it.
-- **Lat/lng refresh** (Phase 6) — daily cron re-running discovery for rows whose
-  `lat_cached_at` is older than 30 days (Google caching compliance, spec §0).
+- **Outreach** — daily (or per your cadence). Each call advances every eligible
+  contact by one sequence step.
+- **Lat/lng refresh** (Phase 6) — daily `POST /api/workers/refresh-geo` for rows
+  whose `lat_cached_at` is older than 30 days (Google caching compliance, §0).
 
 ## Example n8n HTTP Request node
 

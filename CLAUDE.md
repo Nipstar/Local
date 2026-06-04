@@ -82,8 +82,15 @@ premium`, plus `suppressed` (never shown publicly).
 - ✅ Phase 2 — Discovery + enrichment (Places/SerpAPI/crawl, scoring, workers)
 - ✅ Phase 3 — CRM + outreach + confirm-your-details flow
 - ✅ Phase 4 — Portal: Auth.js magic-link, claim, listing editor + R2 photos, Stripe subscriptions
-- ⬜ Phase 5 — GBP reviews + premium features
-- ⬜ Phase 6 — Performance, lat/lng refresh cron, CI structured-data validation
+- ✅ Phase 5 — GBP reviews (premium), gallery, enquiry capture, owner analytics
+- ✅ Phase 6 — lat/lng refresh cron, structured-data validation, GitHub Actions CI, perf polish
+
+### Phase 6 notes
+- `pnpm refresh-geo` / `POST /api/workers/refresh-geo` refresh coordinates past
+  the 30-day window (`src/lib/workers/geo.ts`); n8n runs it daily.
+- `pnpm validate:sd` checks JSON-LD/sitemap/robots against a running server;
+  `.github/workflows/ci.yml` runs lint + typecheck + build + that gate with a
+  Postgres service. `pnpm typecheck` = `tsc --noEmit`.
 
 ### Phase 4 notes
 - Auth.js (next-auth v5) magic-link via `src/auth.ts`; database sessions

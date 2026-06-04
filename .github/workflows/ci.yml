@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: hantslocal
+          POSTGRES_PASSWORD: hantslocal
+          POSTGRES_DB: hantslocal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hantslocal -d hantslocal"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://hantslocal:hantslocal@localhost:5432/hantslocal
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      AUTH_SECRET: ci-dummy-secret-not-used-in-prod
+      N8N_WEBHOOK_SECRET: ci-dummy
+      # No PLACES/SERPAPI/BREVO/STRIPE/R2 keys → adapters run in mock mode.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Migrate + seed
+        run: |
+          pnpm db:migrate
+          pnpm db:seed -- --demo
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Structured-data validation
+        run: |
+          pnpm start &
+          npx --yes wait-on http://localhost:3000 --timeout 60000
+          BASE_URL=http://localhost:3000 pnpm validate:sd

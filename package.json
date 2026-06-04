@@ -7,13 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "validate:sd": "tsx scripts/validate-structured-data.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:studio": "drizzle-kit studio",
     "discover": "tsx scripts/discover.ts",
     "enrich": "tsx scripts/enrich.ts",
-    "outreach": "tsx scripts/outreach.ts"
+    "outreach": "tsx scripts/outreach.ts",
+    "refresh-geo": "tsx scripts/refresh-geo.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",
