@@ -195,6 +195,7 @@ export async function allCategories() {
 
 // ─── Business detail (full owned record + Google anchor) ────────────────────
 export type BusinessDetail = ListingView & {
+  id: string;
   placeId: string;
   phone: string | null;
   email: string | null;
@@ -213,6 +214,7 @@ export async function getBusinessDetail(
   const rows = await db
     .select({
       ...baseSelect,
+      id: businesses.id,
       placeId: businesses.placeId,
       phone: listingContent.phone,
       email: listingContent.email,
@@ -234,6 +236,7 @@ export async function getBusinessDetail(
   const view = toView(r);
   return {
     ...view,
+    id: r.id,
     placeId: r.placeId,
     phone: r.phone,
     email: r.email,

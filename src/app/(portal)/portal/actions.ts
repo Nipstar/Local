@@ -5,11 +5,12 @@ import { redirect } from "next/navigation";
 import { eq, sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { listingContent } from "@/db/schema";
+import { businesses, listingContent } from "@/db/schema";
 import { userOwnsBusiness, claimBusinessForUser } from "@/lib/portal";
 import { uploadPhoto } from "@/lib/integrations/r2";
 import { startUpgrade, billingPortalUrl } from "@/lib/billing";
 import { logActivity } from "@/lib/activity";
+import { importReviews } from "@/lib/reviews";
 import type { Tier } from "@/lib/integrations/stripe";
 
 async function requireOwner(businessId: string): Promise<string> {
@@ -19,6 +20,16 @@ async function requireOwner(businessId: string): Promise<string> {
     throw new Error("Not authorised for this business.");
   }
   return session.user.id;
+}
+
+/** Revalidate the specific public listing page after owner-visible changes. */
+async function revalidatePublic(businessId: string): Promise<void> {
+  const [b] = await db
+    .select({ slug: businesses.slug })
+    .from(businesses)
+    .where(eq(businesses.id, businessId))
+    .limit(1);
+  if (b?.slug) revalidatePath(`/business/${b.slug}`);
 }
 
 export async function updateListingAction(formData: FormData): Promise<void> {
@@ -52,6 +63,7 @@ export async function updateListingAction(formData: FormData): Promise<void> {
     .onConflictDoUpdate({ target: listingContent.businessId, set: values });
   await logActivity(businessId, "listing_edited", {});
   revalidatePath(`/portal/listing/${businessId}`);
+  await revalidatePublic(businessId);
 }
 
 export async function uploadPhotoAction(formData: FormData): Promise<void> {
@@ -74,6 +86,7 @@ export async function uploadPhotoAction(formData: FormData): Promise<void> {
     .where(eq(listingContent.businessId, businessId));
   await logActivity(businessId, "photo_uploaded", { url });
   revalidatePath(`/portal/listing/${businessId}`);
+  await revalidatePublic(businessId);
 }
 
 export async function startUpgradeAction(formData: FormData): Promise<void> {
@@ -84,6 +97,15 @@ export async function startUpgradeAction(formData: FormData): Promise<void> {
   void userId;
   const url = await startUpgrade({ businessId, tier, email: session?.user?.email ?? undefined });
   redirect(url);
+}
+
+export async function importReviewsAction(formData: FormData): Promise<void> {
+  const businessId = String(formData.get("businessId"));
+  await requireOwner(businessId);
+  // Mock mode imports sample reviews; live mode would use the owner's Google token.
+  await importReviews(businessId);
+  revalidatePath(`/portal/listing/${businessId}`);
+  await revalidatePublic(businessId);
 }
 
 export async function billingPortalAction(formData: FormData): Promise<void> {

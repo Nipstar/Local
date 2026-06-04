@@ -4,8 +4,11 @@ import Link from "next/link";
 import { SITE } from "@/lib/config";
 import { getBusinessDetail, allListingSlugs } from "@/lib/queries";
 import { placeDetails, type PlaceDetails } from "@/lib/integrations/places";
+import { getReviews } from "@/lib/reviews";
 import { Badge, LeafGlyph, Rating, VerifiedTick } from "@/components/Badge";
 import { breadcrumbJsonLd, localBusinessJsonLd, JsonLd } from "@/lib/jsonld";
+import { ViewBeacon } from "@/components/ViewBeacon";
+import { EnquiryForm } from "@/components/EnquiryForm";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -47,6 +50,10 @@ export default async function BusinessPage({ params }: Params) {
     }
   }
 
+  // Premium owners can show imported reviews + a gallery.
+  const reviewList = b.isPremium ? await getReviews(b.id) : [];
+  const gallery = b.isPremium && b.photos ? b.photos : [];
+
   const name = b.displayName ?? b.name;
   const rating = b.isOwned ? b.rating : (live?.rating ?? null);
   const reviewCount = b.isOwned ? b.reviewCount : (live?.reviewCount ?? null);
@@ -57,6 +64,7 @@ export default async function BusinessPage({ params }: Params) {
 
   return (
     <article>
+      <ViewBeacon businessId={b.id} />
       <JsonLd data={localBusinessJsonLd(b)} />
       <JsonLd
         data={breadcrumbJsonLd([
@@ -110,14 +118,28 @@ export default async function BusinessPage({ params }: Params) {
         )}
       </header>
 
-      {/* Premium photography slot */}
+      {/* Premium photography / gallery */}
       {b.isPremium && (
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
-          <div className="flex aspect-[21/9] items-center justify-center rounded-[var(--radius-base)] border border-line bg-paper-2">
-            <span className="font-data text-sm text-ink-soft/70">
-              {name} — gallery
-            </span>
-          </div>
+          {gallery.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {gallery.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={src}
+                  src={src}
+                  alt={`${name} photo ${i + 1}`}
+                  className={`w-full rounded-[var(--radius-base)] border border-line object-cover ${
+                    i === 0 ? "col-span-2 row-span-2 aspect-[4/3] sm:col-span-2" : "aspect-square"
+                  }`}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex aspect-[21/9] items-center justify-center rounded-[var(--radius-base)] border border-line bg-paper-2">
+              <span className="font-data text-sm text-ink-soft/70">{name} — gallery</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -145,6 +167,30 @@ export default async function BusinessPage({ params }: Params) {
                   </Badge>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Reviews (premium, owner-imported with attribution) */}
+          {reviewList.length > 0 && (
+            <div className="mt-12 border-t border-line pt-8">
+              <h2 className="font-data text-xs uppercase tracking-widest text-green">Reviews</h2>
+              <ul className="mt-5 space-y-6">
+                {reviewList.map((r) => (
+                  <li key={r.id}>
+                    <div className="flex items-center gap-3">
+                      <Rating value={r.rating} />
+                      <span className="text-sm font-medium text-ink">{r.authorName}</span>
+                      {r.postedAt && (
+                        <span className="font-data text-xs text-ink-soft">
+                          {r.postedAt.toLocaleDateString("en-GB")}
+                        </span>
+                      )}
+                    </div>
+                    {r.body && <p className="mt-2 text-ink-soft">{r.body}</p>}
+                  </li>
+                ))}
+              </ul>
+              <p className="font-data mt-6 text-xs text-ink-soft">Reviews via Google · Data © Google</p>
             </div>
           )}
 
@@ -198,6 +244,16 @@ export default async function BusinessPage({ params }: Params) {
               </div>
             )}
           </div>
+
+          {/* Premium enquiry capture */}
+          {b.isPremium && (
+            <div className="rounded-[var(--radius-base)] border border-line bg-paper-2 p-5">
+              <h2 className="font-data mb-4 text-xs uppercase tracking-widest text-green">
+                Enquire
+              </h2>
+              <EnquiryForm businessId={b.id} name={name} />
+            </div>
+          )}
 
           {/* Claim CTA — only for unclaimed listings (the conversion engine, spec §0) */}
           {!b.isOwned && (

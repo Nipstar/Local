@@ -6,12 +6,14 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { businesses, listingContent, subscriptions } from "@/db/schema";
 import { userOwnsBusiness } from "@/lib/portal";
+import { getEngagement, listEnquiries } from "@/lib/engagement";
 import { Badge } from "@/components/Badge";
 import {
   updateListingAction,
   uploadPhotoAction,
   startUpgradeAction,
   billingPortalAction,
+  importReviewsAction,
 } from "../../actions";
 
 export const metadata: Metadata = { robots: { index: false } };
@@ -37,6 +39,10 @@ export default async function ListingEditor({
   const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.businessId, id)).limit(1);
   const photos = Array.isArray(c?.photos) ? (c!.photos as string[]) : [];
   const isPremium = biz.status === "premium";
+  const [engagement, enquiries] = await Promise.all([
+    getEngagement(id),
+    isPremium ? listEnquiries(id, 10) : Promise.resolve([]),
+  ]);
 
   return (
     <div>
@@ -95,8 +101,21 @@ export default async function ListingEditor({
           </button>
         </form>
 
-        {/* Sidebar: photos + plan */}
+        {/* Sidebar: analytics, photos, plan, reviews, enquiries */}
         <aside className="space-y-8">
+          <Panel title="Analytics">
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="font-data text-xs uppercase tracking-wide text-ink-soft">Views</dt>
+                <dd className="text-2xl text-ink">{engagement.views}</dd>
+              </div>
+              <div>
+                <dt className="font-data text-xs uppercase tracking-wide text-ink-soft">Enquiries</dt>
+                <dd className="text-2xl text-ink">{engagement.enquiries}</dd>
+              </div>
+            </dl>
+          </Panel>
+
           <Panel title="Photos">
             {photos.length > 0 ? (
               <ul className="mb-3 space-y-1">
@@ -155,6 +174,40 @@ export default async function ListingEditor({
               </>
             )}
           </Panel>
+
+          {isPremium && (
+            <Panel title="Google reviews">
+              <p className="mb-3 text-sm text-ink-soft">
+                Import reviews from your connected Google account (shown with
+                attribution).
+              </p>
+              <form action={importReviewsAction}>
+                <input type="hidden" name="businessId" value={biz.id} />
+                <button className="w-full rounded-[var(--radius-base)] border border-line px-3 py-2 text-sm hover:bg-paper-2">
+                  Import Google reviews
+                </button>
+              </form>
+            </Panel>
+          )}
+
+          {isPremium && (
+            <Panel title="Recent enquiries">
+              {enquiries.length === 0 ? (
+                <p className="text-sm text-ink-soft">No enquiries yet.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {enquiries.map((e) => (
+                    <li key={e.id} className="border-b border-line pb-2 text-sm last:border-0">
+                      <p className="font-data text-xs text-ink-soft">
+                        {e.createdAt?.toLocaleDateString("en-GB")} · {e.email ?? "—"}
+                      </p>
+                      {e.message && <p className="mt-1 text-ink">{e.message}</p>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+          )}
         </aside>
       </div>
     </div>

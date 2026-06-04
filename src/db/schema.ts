@@ -141,6 +141,31 @@ export const crawlJobs = pgTable(
   (t) => [index("crawl_jobs_status_type_idx").on(t.status, t.type)],
 );
 
+// ─── Premium: enquiries + analytics (Phase 5) ────────────────────────────────
+export const enquiries = pgTable(
+  "enquiries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    businessId: uuid("business_id").references(() => businesses.id, { onDelete: "cascade" }),
+    name: text("name"),
+    email: text("email"),
+    phone: text("phone"),
+    message: text("message"),
+    handled: boolean("handled").default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [index("enquiries_business_idx").on(t.businessId)],
+);
+
+/** Lightweight per-listing view counter (owner analytics). */
+export const listingStats = pgTable("listing_stats", {
+  businessId: uuid("business_id")
+    .primaryKey()
+    .references(() => businesses.id, { onDelete: "cascade" }),
+  views: integer("views").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 // ─── CRM / outreach (Phase 3) ────────────────────────────────────────────────
 export const outreachContacts = pgTable("outreach_contacts", {
   id: uuid("id").primaryKey().defaultRandom(),

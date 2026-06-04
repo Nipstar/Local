@@ -15,6 +15,13 @@
       "when": 1780582032908,
       "tag": "0001_plain_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780582719927,
+      "tag": "0002_swift_mystique",
+      "breakpoints": true
     }
   ]
 }
