@@ -5,6 +5,8 @@
  * message id is returned, so the confirm → reminder → pitch loop is runnable
  * end-to-end without live credentials.
  */
+import { SITE, env } from "@/lib/config";
+
 const SEND_URL = "https://api.brevo.com/v3/smtp/email";
 
 function key() {
@@ -40,7 +42,7 @@ export async function sendTransactional(input: {
       accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { name: "HantsLocal", email: "hello@hantslocal.co.uk" },
+      sender: { name: SITE.name, email: env.emailFrom },
       to: [input.to],
       subject: input.subject,
       htmlContent: input.html,

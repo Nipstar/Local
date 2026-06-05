@@ -14,7 +14,7 @@ import {
   sessions,
   verificationTokens,
 } from "@/db/schema";
-import { SITE } from "@/lib/config";
+import { SITE, env } from "@/lib/config";
 import { sendTransactional } from "@/lib/integrations/brevo";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -42,7 +42,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: "brevo",
       type: "email",
       name: "Email",
-      from: "hello@hantslocal.co.uk",
+      from: env.emailFrom,
       maxAge: 24 * 60 * 60,
       options: {},
       async sendVerificationRequest({ identifier, url }) {

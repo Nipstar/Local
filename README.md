@@ -56,6 +56,10 @@ pnpm dev                        # http://localhost:3000  (styleguide at /stylegu
 > No external API keys are needed in dev: the Places / SerpAPI / crawl adapters
 > fall back to deterministic **mock mode** when their keys are absent.
 
+**Deploying to a server?** See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — a
+step-by-step guide to wiring up Postgres, Coolify, and each external service
+(Places, Brevo + DNS, Stripe, R2, n8n schedules), with a go-live checklist.
+
 ## Discovery & enrichment (Phase 2)
 
 ```bash

@@ -47,6 +47,10 @@ export const env = {
   get workerSecret() {
     return optional("N8N_WEBHOOK_SECRET");
   },
+  /** From-address for all outbound email (must be a verified Brevo sender). */
+  get emailFrom() {
+    return optional("EMAIL_FROM") ?? "hello@hantslocal.co.uk";
+  },
 };
 
 /**
