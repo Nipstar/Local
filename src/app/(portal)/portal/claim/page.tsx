@@ -28,6 +28,7 @@ export default async function ClaimPage({
 
   if (b) {
     const res = await claimBusinessForUser(session.user.id, b);
+    if (res.ok && res.pending) redirect("/portal?claim=pending");
     if (res.ok && res.businessId) redirect(`/portal/listing/${res.businessId}`);
   }
 

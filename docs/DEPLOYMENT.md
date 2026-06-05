@@ -79,7 +79,8 @@ runs in mock mode.
 |---|---|---|
 | `DATABASE_URL` | **Yes** | Postgres connection string. |
 | `NEXT_PUBLIC_SITE_URL` | **Yes** | Public base URL, e.g. `https://hantslocal.co.uk`. Used for canonical tags, sitemap, JSON-LD, email links. |
-| `AUTH_SECRET` | **Yes (for portal)** | `openssl rand -base64 32`. Signs Auth.js sessions. |
+| `AUTH_SECRET` | **Yes (for portal)** | `openssl rand -base64 32`. Signs Auth.js sessions (also the GBP OAuth state). |
+| `ADMIN_EMAILS` | **Yes (for admin)** | Comma-separated emails allowed into `/admin`. **Unset in production = no admin access.** |
 | `EMAIL_FROM` | Recommended | From-address for all email; must be a **verified Brevo sender** (§5). |
 | `N8N_WEBHOOK_SECRET` | **Yes (for workers)** | Random string; n8n sends it as the `X-Worker-Secret` header. Without it `/api/workers/*` return 503. |
 | `PLACES_API_KEY` | Optional | Google Places API (New). Enables discovery + live details on unclaimed listings. |
@@ -177,13 +178,19 @@ any of these from the CLI on the box: `pnpm discover`, `pnpm enrich`,
 
 ## 9. Google Business Profile reviews (premium, optional)
 
-Phase 5 review import is **premium-gated and runs in mock mode out of the box**
-(sample reviews). To import *real* reviews you must finish one integration seam:
+Phase 5 review import is **premium-gated**. The owner OAuth connect flow is
+wired end-to-end:
 
-- Set up Google OAuth (`GBP_CLIENT_ID` / `GBP_CLIENT_SECRET`) with the Business
-  Profile API scope, store the owner's access token, and resolve their location
-  id. The hook is `fetchOwnerReviews()` in
-  `src/lib/integrations/gbp.ts` (currently throws in live mode until wired).
+1. Create an OAuth client (`GBP_CLIENT_ID` / `GBP_CLIENT_SECRET`) with the
+   `business.manage` scope and redirect URI `https://YOUR_DOMAIN/api/gbp/callback`.
+2. With those set, the listing editor shows **Connect Google** → consent →
+   tokens are stored (refreshed automatically) in `gbp_connections`.
+
+One seam remains before real reviews flow: the live **My Business v4
+`accounts.locations.reviews`** call (marked in `fetchOwnerReviews()` in
+`src/lib/integrations/gbp.ts`). It needs your Google project allow-listed by
+Google and a `place_id → GBP location` mapping. Until that's enabled, a
+connected account still imports **sample** reviews rather than erroring.
 
 Never import reviews for unclaimed businesses — that's a hard guardrail (§0).
 
@@ -207,18 +214,20 @@ Never import reviews for unclaimed businesses — that's a hard guardrail (§0).
 
 ## Before you go public
 
-These are intentional, spec-sequenced shortcuts — fine for staging/internal use,
-but address them before opening to the public:
+These were the pre-launch hardening items — now addressed, with one thing left
+for you to configure and one external dependency:
 
-1. **`/admin` is unauthenticated.** It's robots-disallowed, but anyone with the
-   URL can view/edit prospects and change statuses. Gate it before launch —
-   put it behind Coolify Basic Auth / an IP allow-list / a VPN, or extend the
-   Auth.js session check (used for `/portal`) to the `(admin)` group.
-2. **Claiming trusts the signed-in user.** "Is this your business?" marks a
-   claim verified immediately. Add real ownership proof (email-domain match or
-   GBP verification) before letting strangers claim listings at scale.
-3. **GBP live review import is a stub** (§9) — premium review import shows
-   sample data until the OAuth token + location flow is finished.
+1. **`/admin` is gated.** Access requires a signed-in user whose email is in
+   `ADMIN_EMAILS` (page guard + every admin action checks it). It **fails
+   closed in production** — so remember to set `ADMIN_EMAILS`, or no one gets
+   in. (In dev it stays open when the list is unset.)
+2. **Claiming is hardened.** Self-serve "Is this your business?" only
+   auto-verifies when the claimant's email domain matches the business website
+   domain; otherwise the claim is **pending** until an admin approves it from
+   the prospect detail page. (Admin-sent confirm links remain trusted.)
+3. **GBP live reviews** — the owner OAuth connect flow is wired (§9); the final
+   live `reviews` API call needs Google project allow-listing. Connected
+   accounts import sample data until then.
 
 Everything else (the public directory, discovery/enrichment, outreach + confirm
 flow, portal, Stripe, R2, analytics, the geo cron, CI) is production-shaped and

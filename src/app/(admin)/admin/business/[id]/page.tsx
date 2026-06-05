@@ -3,8 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProspectDetail } from "@/lib/admin-queries";
 import { getActivity } from "@/lib/activity";
+import { listPendingClaims } from "@/lib/portal";
 import { ConfirmLinkButton } from "@/components/admin/ConfirmLinkButton";
-import { setStatusAction, saveContactAction, reenrichAction } from "../../actions";
+import {
+  setStatusAction,
+  saveContactAction,
+  reenrichAction,
+  approveClaimAction,
+} from "../../actions";
 
 export const metadata: Metadata = { robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -20,6 +26,7 @@ export default async function ProspectDetailPage({
   const b = await getProspectDetail(id);
   if (!b) notFound();
   const activity = await getActivity(id);
+  const pendingClaims = await listPendingClaims(id);
   const tech = b.enrichment?.tech as Record<string, unknown> | null;
 
   return (
@@ -122,6 +129,28 @@ export default async function ProspectDetailPage({
               </button>
             </form>
           </Panel>
+
+          {/* Pending self-serve claims awaiting approval */}
+          {pendingClaims.length > 0 && (
+            <Panel title="Pending claims">
+              <ul className="space-y-3">
+                {pendingClaims.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-3 text-sm">
+                    <span className="font-data truncate text-xs text-ink-soft">
+                      {c.email ?? c.userId}
+                    </span>
+                    <form action={approveClaimAction}>
+                      <input type="hidden" name="claimId" value={c.id} />
+                      <input type="hidden" name="businessId" value={b.id} />
+                      <button className="shrink-0 rounded-[var(--radius-base)] bg-green px-3 py-1.5 text-xs text-paper">
+                        Approve
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
 
           {/* Confirm link */}
           <Panel title="Confirm-your-details link">

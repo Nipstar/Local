@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { businesses, listingContent, subscriptions } from "@/db/schema";
 import { userOwnsBusiness } from "@/lib/portal";
 import { getEngagement, listEnquiries } from "@/lib/engagement";
+import { gbpLive, isConnected } from "@/lib/integrations/gbp";
 import { Badge } from "@/components/Badge";
 import {
   updateListingAction,
@@ -43,6 +44,8 @@ export default async function ListingEditor({
     getEngagement(id),
     isPremium ? listEnquiries(id, 10) : Promise.resolve([]),
   ]);
+  const gbpConfigured = gbpLive();
+  const gbpConnected = gbpConfigured ? await isConnected(session.user.id) : false;
 
   return (
     <div>
@@ -177,16 +180,33 @@ export default async function ListingEditor({
 
           {isPremium && (
             <Panel title="Google reviews">
-              <p className="mb-3 text-sm text-ink-soft">
-                Import reviews from your connected Google account (shown with
-                attribution).
-              </p>
-              <form action={importReviewsAction}>
-                <input type="hidden" name="businessId" value={biz.id} />
-                <button className="w-full rounded-[var(--radius-base)] border border-line px-3 py-2 text-sm hover:bg-paper-2">
-                  Import Google reviews
-                </button>
-              </form>
+              {gbpConfigured && !gbpConnected ? (
+                <>
+                  <p className="mb-3 text-sm text-ink-soft">
+                    Connect your Google account to import your reviews (shown with
+                    attribution).
+                  </p>
+                  <a
+                    href={`/api/gbp/connect?businessId=${biz.id}`}
+                    className="block w-full rounded-[var(--radius-base)] bg-green px-3 py-2 text-center text-sm text-paper"
+                  >
+                    Connect Google
+                  </a>
+                </>
+              ) : (
+                <>
+                  <p className="mb-3 text-sm text-ink-soft">
+                    {gbpConnected ? "Google connected. " : ""}Import your reviews
+                    (shown with attribution).
+                  </p>
+                  <form action={importReviewsAction}>
+                    <input type="hidden" name="businessId" value={biz.id} />
+                    <button className="w-full rounded-[var(--radius-base)] border border-line px-3 py-2 text-sm hover:bg-paper-2">
+                      Import Google reviews
+                    </button>
+                  </form>
+                </>
+              )}
             </Panel>
           )}
 

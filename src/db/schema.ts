@@ -265,6 +265,17 @@ export const claims = pgTable(
   (t) => [uniqueIndex("claims_token_idx").on(t.token)],
 );
 
+/** Google Business Profile OAuth connection per owner (Phase 5 live reviews). */
+export const gbpConnections = pgTable("gbp_connections", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const subscriptions = pgTable("subscriptions", {
   id: uuid("id").primaryKey().defaultRandom(),
   businessId: uuid("business_id").references(() => businesses.id),

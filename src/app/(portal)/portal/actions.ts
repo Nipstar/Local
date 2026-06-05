@@ -11,6 +11,7 @@ import { uploadPhoto } from "@/lib/integrations/r2";
 import { startUpgrade, billingPortalUrl } from "@/lib/billing";
 import { logActivity } from "@/lib/activity";
 import { importReviews } from "@/lib/reviews";
+import { getAccessToken } from "@/lib/integrations/gbp";
 import type { Tier } from "@/lib/integrations/stripe";
 
 async function requireOwner(businessId: string): Promise<string> {
@@ -101,9 +102,10 @@ export async function startUpgradeAction(formData: FormData): Promise<void> {
 
 export async function importReviewsAction(formData: FormData): Promise<void> {
   const businessId = String(formData.get("businessId"));
-  await requireOwner(businessId);
-  // Mock mode imports sample reviews; live mode would use the owner's Google token.
-  await importReviews(businessId);
+  const userId = await requireOwner(businessId);
+  // Use the owner's connected Google token when available; else sample data.
+  const accessToken = (await getAccessToken(userId)) ?? undefined;
+  await importReviews(businessId, accessToken);
   revalidatePath(`/portal/listing/${businessId}`);
   await revalidatePublic(businessId);
 }
@@ -120,6 +122,7 @@ export async function claimAction(formData: FormData): Promise<void> {
   const session = await auth();
   if (!session?.user?.id) redirect(`/portal/login?callbackUrl=/portal/claim?b=${slug}`);
   const res = await claimBusinessForUser(session.user.id, slug);
+  if (res.ok && res.pending) redirect("/portal?claim=pending");
   if (res.ok && res.businessId) redirect(`/portal/listing/${res.businessId}`);
   redirect("/portal");
 }

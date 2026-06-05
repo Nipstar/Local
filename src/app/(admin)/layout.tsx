@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { SITE } from "@/lib/config";
+import { signOut } from "@/auth";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export const metadata = { robots: { index: false } };
 
 /**
- * Admin shell. NOTE: unauthenticated by design for now — Auth.js gating lands in
- * Phase 4. /admin is robots-disallowed in the meantime.
+ * Admin shell. Gated by requireAdmin() — an ADMIN_EMAILS allowlist over the
+ * shared magic-link auth. Open in dev when no allowlist is configured.
  */
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await requireAdmin();
+
   return (
     <div className="min-h-full">
       <header className="border-b border-line bg-paper-2">
@@ -18,6 +22,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <nav className="font-data flex items-center gap-5 text-xs uppercase tracking-wide text-ink-soft">
             <Link href="/admin" className="hover:text-green">Prospects</Link>
             <Link href="/" className="hover:text-green">View site →</Link>
+            {session?.user && (
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/" });
+                }}
+              >
+                <button className="uppercase tracking-wide hover:text-green">Sign out</button>
+              </form>
+            )}
           </nav>
         </div>
       </header>

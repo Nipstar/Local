@@ -109,7 +109,10 @@ premium`, plus `suppressed` (never shown publicly).
 
 - Never bulk-scrape or persist Google reviews/ratings/photos. Reviews come only
   from owner GBP OAuth (Phase 5), stored with attribution.
-- `/admin` and `/portal` are robots-disallowed. Admin auth lands in Phase 4
-  (Auth.js); until then admin is open by design per the spec's sequencing.
+- `/admin` and `/portal` are robots-disallowed. `/admin` is gated by an
+  `ADMIN_EMAILS` allowlist over the magic-link auth (`src/lib/admin-auth.ts`) —
+  fail-closed in production, open in dev when unset. Self-serve claims only
+  auto-verify on an email↔website domain match, else go pending for admin
+  approval (`src/lib/portal.ts`).
 - Don't commit `.env`, `.pgdata`, or `node_modules`.
 - Don't create PRs unless explicitly asked; push to the working branch.
